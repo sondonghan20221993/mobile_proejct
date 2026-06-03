@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Prompt Diet</string>
+    <string name="analysis_function">분석기능</string>
+    <string name="statistics_analysis">통계 분석</string>
+    <string name="detail_statistics_analysis">세부 통계 분석</string>
+    <string name="input_chat_hint">채팅 내용 넣기</string>
+    <string name="start_analysis">분석 시작</string>
+    <string name="user_profile">사용자 프로필</string>
+    <string name="top_causes">상위 원인</string>
+    <string name="detail_causes">세부 추정 원인</string>
+    <string name="detail_log_data">세부적인 로그별 추정 자료</string>
+    <string name="statistics_summary">분석 요약</string>
+    <string name="total_analyses">총 분석 수</string>
+    <string name="average_score">평균 효율성</string>
+    <string name="best_score">최고 효율성</string>
+    <string name="wasted_tokens">누적 낭비 토큰</string>
+    <string name="recent_trend">최근 흐름</string>
+    <string name="issue_breakdown">원인 분포</string>
+</resources>
