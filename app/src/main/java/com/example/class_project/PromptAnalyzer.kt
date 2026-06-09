@@ -122,8 +122,14 @@ class PromptAnalyzer(
         } else {
             0f
         }
-        val repeatedConnectors = dictionary.connectorKeywords
-            .count { signals.originalText.contains(it) }
+        val foundConnectors = dictionary.connectorKeywords
+            .filter { signals.originalText.contains(it) }
+            .sortedByDescending { it.length }
+        val repeatedConnectors = foundConnectors.count { candidate ->
+            foundConnectors.none { longer ->
+                longer.length > candidate.length && longer.contains(candidate)
+            }
+        }
 
         if (foundFillers.size >= 2 || fillerDensity >= 0.15f || repeatedConnectors >= 2) {
             val evidence = buildList {

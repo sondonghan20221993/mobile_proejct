@@ -25,7 +25,8 @@
         <activity
             android:name=".DetailStatisticsActivity"
             android:exported="false"
-            android:label="@string/detail_statistics_analysis" />
+            android:label="@string/detail_statistics_analysis"
+            android:parentActivityName=".MainActivity" />
 
     </application>
 

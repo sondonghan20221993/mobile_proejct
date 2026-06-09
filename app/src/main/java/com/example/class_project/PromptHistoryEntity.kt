@@ -1,7 +1,11 @@
 package com.example.class_project
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "prompt_history")
 data class PromptHistoryEntity(
-    val id: Long = 0,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val originalText: String,
     val modelName: String,
     val inputTokens: Int,

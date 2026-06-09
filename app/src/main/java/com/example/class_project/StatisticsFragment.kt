@@ -45,6 +45,7 @@ class StatisticsFragment : Fragment() {
             binding.tvTrendValue.text = state.recentTrendLabel
             binding.tvBreakdownValue.text = state.issueBreakdownLabel
             binding.tvEmptyState.text = state.emptyStateLabel
+            binding.chartIssueBreakdown.setEntries(state.chartEntries)
             binding.layoutStatsContent.visibility = if (state.hasData) View.VISIBLE else View.GONE
             binding.tvEmptyState.visibility = if (state.hasData) View.GONE else View.VISIBLE
             binding.boxDetailCauses.text =

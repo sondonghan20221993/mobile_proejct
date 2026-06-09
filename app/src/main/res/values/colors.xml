@@ -15,4 +15,7 @@
     <color name="teal_700">#00796B</color>
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
+    <color name="score_good">#1B7C4A</color>
+    <color name="score_medium">#B45309</color>
+    <color name="score_bad">#B91C1C</color>
 </resources>

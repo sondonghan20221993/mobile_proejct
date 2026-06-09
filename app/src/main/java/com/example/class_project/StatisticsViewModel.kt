@@ -4,6 +4,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
 data class StatisticsUiState(
     val totalAnalyses: Int,
@@ -17,13 +19,18 @@ data class StatisticsUiState(
     val issueBreakdownLabel: String,
     val recentTrendLabel: String,
     val emptyStateLabel: String,
-    val hasData: Boolean
+    val hasData: Boolean,
+    val chartEntries: List<IssueBarChartView.BarEntry> = emptyList()
 )
 
 class StatisticsViewModel(
-    repository: PromptHistoryRepository
+    private val repository: PromptHistoryRepository
 ) : ViewModel() {
     val history: LiveData<List<PromptHistoryWithIssues>> = repository.observeHistory()
+
+    fun clearHistory() {
+        viewModelScope.launch { repository.deleteAll() }
+    }
     val statisticsState = MediatorLiveData<StatisticsUiState>().apply {
         addSource(history) { entries ->
             value = entries.toStatisticsUiState()
@@ -74,6 +81,13 @@ class StatisticsViewModel(
             else -> "최근 분석 효율이 비슷한 수준을 유지하고 있습니다."
         }
 
+        val countMap = issueCounts.toMap()
+        val chartEntries = listOf(
+            IssueBarChartView.BarEntry("중복", countMap[IssueType.REDUNDANCY.name] ?: 0, 0xFF1E3A5F.toInt()),
+            IssueBarChartView.BarEntry("장황", countMap[IssueType.VERBOSITY.name] ?: 0, 0xFF2E7D6E.toInt()),
+            IssueBarChartView.BarEntry("범위", countMap[IssueType.LACK_OF_SCOPE.name] ?: 0, 0xFF7B4F9E.toInt())
+        )
+
         return StatisticsUiState(
             totalAnalyses = size,
             averageEfficiencyScore = averageScore,
@@ -86,7 +100,8 @@ class StatisticsViewModel(
             issueBreakdownLabel = breakdown,
             recentTrendLabel = trendLabel,
             emptyStateLabel = "",
-            hasData = true
+            hasData = true,
+            chartEntries = chartEntries
         )
     }
 }

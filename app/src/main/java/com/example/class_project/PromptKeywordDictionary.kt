@@ -15,7 +15,7 @@ data class PromptKeywordDictionary(
                 outputFormatKeywords = commonOutputFormats + technicalOutputFormats + writingOutputFormats,
                 constraintKeywords = commonConstraints + formattingConstraints + qualityConstraints,
                 contextKeywords = commonContexts + technicalContexts + businessContexts,
-                actionKeywords = commonActions + technicalActions + writingActions + planningActions,
+                actionKeywords = commonActions + technicalActions + writingActions + planningActions + colloquialActions,
                 connectorKeywords = commonConnectors
             )
         }
@@ -168,6 +168,16 @@ data class PromptKeywordDictionary(
             "계획",
             "도출",
             "추출"
+        )
+
+        private val colloquialActions = listOf(
+            "알려",   // 알려줘, 알려주세요
+            "보여",   // 보여줘, 보여주세요
+            "만들어", // 만들어줘, 만들어주세요
+            "찾아",   // 찾아줘, 찾아봐줘
+            "제안",   // 제안해줘
+            "생성",   // 생성해줘
+            "나열"    // 나열해줘
         )
 
         private val commonConnectors = listOf(

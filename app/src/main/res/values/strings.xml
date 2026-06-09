@@ -16,4 +16,7 @@
     <string name="wasted_tokens">누적 낭비 토큰</string>
     <string name="recent_trend">최근 흐름</string>
     <string name="issue_breakdown">원인 분포</string>
+    <string name="clear_history">전체 기록 삭제</string>
+    <string name="empty_history_detail">아직 저장된 분석 기록이 없습니다.\n분석 탭에서 프롬프트를 입력하고 첫 결과를 만들어 보세요.</string>
+    <string name="back">뒤로</string>
 </resources>
