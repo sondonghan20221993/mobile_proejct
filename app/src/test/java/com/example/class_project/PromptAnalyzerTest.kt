@@ -707,4 +707,239 @@ class PromptAnalyzerTest {
         assertTrue(issue.description.isNotBlank())
         assertTrue(issue.suggestedFix.isNotBlank())
     }
+
+    // ── Fix 1: 조건부 filler ─────────────────────────────────────────────────
+
+    @Test
+    fun `가능하면 followed by format keyword is not counted as filler`() {
+        // "가능하면 JSON으로" → conditional use → no VERBOSITY
+        val result = analyzer.analyze("가능하면 JSON으로 출력해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `가능하면 followed by list format is not counted as filler`() {
+        val result = analyzer.analyze("가능하면 리스트로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `가능하면 followed by constraint keyword is not counted as filler`() {
+        // "이내" = commonConstraints → conditional → no VERBOSITY
+        val result = analyzer.analyze("가능하면 200자 이내로 작성해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `괜찮다면 followed by format keyword is not counted as filler`() {
+        val result = analyzer.analyze("괜찮다면 표로 보여줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `혹시 가능하면 followed by format keyword is not counted as filler`() {
+        val result = analyzer.analyze("혹시 가능하면 단계로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `가능하면 without format or constraint keyword remains a filler`() {
+        // "짧게" is not a format/constraint keyword → still a filler
+        val result = analyzer.analyze("가능하면 짧게 해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `two non-conditional polite fillers still trigger verbosity`() {
+        // 둘 다 format/constraint 없이 쓰임 → count=2 → VERBOSITY
+        val result = analyzer.analyze("혹시 가능하면 괜찮다면 이 내용 좀 요약해줄 수 있을까요")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    // ── Fix 2: 동의어 정규화 ──────────────────────────────────────────────────
+
+    @Test
+    fun `Python and 파이썬 normalize to same token and trigger redundancy`() {
+        // "python" → "파이썬", "파이썬" → "파이썬" → count=3 → REDUNDANCY
+        val result = analyzer.analyze("Python 파이썬 파이썬 코드를 리스트로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `GPT and ChatGPT normalize to same token and trigger redundancy`() {
+        // "chatgpt" → "gpt", "gpt" → "gpt" × 3 → REDUNDANCY
+        val result = analyzer.analyze("GPT ChatGPT gpt 차이를 표로 알려줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `Kotlin and 코틀린 normalize to same token and trigger redundancy`() {
+        val result = analyzer.analyze("Kotlin 코틀린 코틀린 문법을 리스트로 알려줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `Android and 안드로이드 twice do not trigger redundancy`() {
+        // 동의어 정규화 후 "안드로이드"×2 < 3 → no REDUNDANCY
+        val result = analyzer.analyze("Android 안드로이드 앱 개발 방법 알려줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    // ── Fix 3: suggestedFix 구체화 ────────────────────────────────────────────
+
+    @Test
+    fun `redundancy suggestedFix mentions the repeated word`() {
+        // 반복 단어 '코드'가 suggestedFix에 언급되어야 함
+        val result = analyzer.analyze("코드 코드 코드 설명해줘")
+        val issue = result.issues.first { it.type == IssueType.REDUNDANCY }
+
+        assertTrue(issue.suggestedFix.contains("코드"))
+    }
+
+    @Test
+    fun `verbosity suggestedFix mentions the detected filler word`() {
+        // '정말' filler → suggestedFix에 '정말' 언급
+        val result = analyzer.analyze("정말 매우 설명해줘")
+        val issue = result.issues.first { it.type == IssueType.VERBOSITY }
+
+        assertTrue(issue.suggestedFix.contains("정말") || issue.suggestedFix.contains("매우"))
+    }
+
+    @Test
+    fun `scope suggestedFix mentions action when action is missing`() {
+        // action 없음 → suggestedFix에 "분석·요약·설명" 같은 힌트
+        val result = analyzer.analyze("이거 해줘")
+        val issue = result.issues.first { it.type == IssueType.LACK_OF_SCOPE }
+
+        assertTrue(issue.suggestedFix.contains("분석") || issue.suggestedFix.contains("해달라"))
+    }
+
+    @Test
+    fun `scope suggestedFix mentions format when format is missing`() {
+        // format 없음 → suggestedFix에 "리스트·표·단계별" 힌트
+        val result = analyzer.analyze("이거 해줘")
+        val issue = result.issues.first { it.type == IssueType.LACK_OF_SCOPE }
+
+        assertTrue(issue.suggestedFix.contains("리스트") || issue.suggestedFix.contains("형식"))
+    }
+
+    @Test
+    fun `connector-only verbosity suggestedFix suggests compression`() {
+        // filler 없이 connector만 → "압축" 언급
+        val result = analyzer.analyze("설명해줘 그리고 요약해줘 또한 번역해줘")
+        val issue = result.issues.first { it.type == IssueType.VERBOSITY }
+
+        assertTrue(issue.suggestedFix.contains("압축"))
+    }
+
+    // ── 새 실전 데이터셋 ──────────────────────────────────────────────────────
+
+    @Test
+    fun `논문 3줄 요약 prompt triggers scope due to missing format`() {
+        // action(요약)=true, constraint(줄)=true, format 없음, context 없음(3토큰<8)
+        // missingSignals: [format, context]=2 → SCOPE
+        val result = analyzer.analyze("이 논문을 3줄로 요약해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `multi-request with two connectors triggers verbosity`() {
+        // "그리고" + "또한" → connector 2종 → VERBOSITY
+        val result = analyzer.analyze("요약해줘. 그리고 번역도 해줘. 또한 예시도 들어줘.")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `초안 as both action and format satisfies isShortButPrecise`() {
+        // "초안" → writingActions(action=true) + writingOutputFormats(format=true), 4토큰 → no SCOPE
+        val result = analyzer.analyze("단편 소설 초안을 써줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `개조식 is recognized as output format`() {
+        // "개조식" 추가된 writingOutputFormats → hasOutputFormat=true
+        val result = analyzer.analyze("하기 내용을 개조식으로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `질문형 프롬프트 triggers scope due to missing action`() {
+        // "머신러닝이 뭔가요" → 2토큰, action 없음 → SCOPE (알려진 동작: 질문형 미처리)
+        val result = analyzer.analyze("머신러닝이 뭔가요")
+
+        assertTrue(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `number list format prompt avoids scope issue`() {
+        // action(정리), format(목록), 3토큰 → isShortButPrecise → no SCOPE
+        val result = analyzer.analyze("10가지를 목록으로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `코드 keyword satisfies both hasContext and hasOutputFormat simultaneously`() {
+        // "코드" = technicalContexts(context) + technicalOutputFormats(format) 동시 충족
+        // action(설명) + format(코드) + context(코드) → missingSignals=[constraint]=1 < 2 → no SCOPE
+        val result = analyzer.analyze("print hello 이 코드 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `qualityConstraint 간단 satisfies hasConstraint`() {
+        // action(설명) + context(코드) + constraint(간단) → missingSignals=[format]=1 < 2 → no SCOPE
+        val result = analyzer.analyze("코드를 최대한 간단하게 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `multiple output formats in one prompt are all recognized`() {
+        // json + markdown 둘 다 포함 → hasOutputFormat=true → no SCOPE
+        val result = analyzer.analyze("결과를 json과 markdown으로 동시에 보여줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `JavaScript and JS normalize to same token and trigger redundancy`() {
+        val result = analyzer.analyze("JavaScript JS js 문법을 리스트로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `very long clean prompt has score 100`() {
+        val result = analyzer.analyze(
+            "우리 안드로이드 앱에서 Room 데이터베이스를 사용할 때 발생하는 " +
+            "마이그레이션 오류의 원인을 분석하고, 각 원인별 해결 방법을 단계별 목록으로 정리해줘"
+        )
+
+        assertEquals(100, result.efficiencyScore)
+    }
+
+    @Test
+    fun `React and 리액트 normalize to same token and trigger redundancy`() {
+        val result = analyzer.analyze("React 리액트 리액트 컴포넌트를 리스트로 만들어줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
 }

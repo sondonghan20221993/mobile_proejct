@@ -6,7 +6,9 @@ data class PromptKeywordDictionary(
     val constraintKeywords: List<String>,
     val contextKeywords: List<String>,
     val actionKeywords: List<String>,
-    val connectorKeywords: List<String>
+    val connectorKeywords: List<String>,
+    val synonymGroups: Map<String, String> = emptyMap(),
+    val conditionalFillerPhrases: Set<String> = emptySet()
 ) {
     companion object {
         fun default(): PromptKeywordDictionary {
@@ -16,7 +18,9 @@ data class PromptKeywordDictionary(
                 constraintKeywords = commonConstraints + formattingConstraints + qualityConstraints,
                 contextKeywords = commonContexts + technicalContexts + businessContexts,
                 actionKeywords = commonActions + technicalActions + writingActions + planningActions + colloquialActions,
-                connectorKeywords = commonConnectors
+                connectorKeywords = commonConnectors,
+                synonymGroups = defaultSynonyms,
+                conditionalFillerPhrases = politeFillers.toSet()
             )
         }
 
@@ -69,7 +73,8 @@ data class PromptKeywordDictionary(
             "체크리스트",
             "보고서",
             "초안",
-            "bullet"
+            "bullet",
+            "개조식"
         )
 
         private val commonConstraints = listOf(
@@ -178,6 +183,28 @@ data class PromptKeywordDictionary(
             "제안",   // 제안해줘
             "생성",   // 생성해줘
             "나열"    // 나열해줘
+        )
+
+        private val defaultSynonyms = mapOf(
+            "python" to "파이썬",
+            "파이썬" to "파이썬",
+            "javascript" to "자바스크립트",
+            "js" to "자바스크립트",
+            "자바스크립트" to "자바스크립트",
+            "kotlin" to "코틀린",
+            "코틀린" to "코틀린",
+            "java" to "자바",
+            "자바" to "자바",
+            "android" to "안드로이드",
+            "안드로이드" to "안드로이드",
+            "gpt" to "gpt",
+            "chatgpt" to "gpt",
+            "ml" to "머신러닝",
+            "머신러닝" to "머신러닝",
+            "react" to "react",
+            "리액트" to "react",
+            "vue" to "vue",
+            "뷰" to "vue"
         )
 
         private val commonConnectors = listOf(

@@ -78,9 +78,10 @@ class PromptAnalyzer(
 
     private fun simplifyToken(token: String): String {
         val suffixes = listOf("으로", "에서", "에게", "까지", "부터", "보다", "처럼", "하다", "하고", "적인", "적인지", "입니다", "해주세요", "해줘")
-        return suffixes.firstOrNull { token.endsWith(it) && token.length > it.length + 1 }
+        val suffixStripped = suffixes.firstOrNull { token.endsWith(it) && token.length > it.length + 1 }
             ?.let { token.removeSuffix(it) }
             ?: token
+        return dictionary.synonymGroups[suffixStripped] ?: suffixStripped
     }
 
     private fun detectRedundancy(signals: PromptSignals): AnalysisIssue? {
@@ -104,10 +105,16 @@ class PromptAnalyzer(
                 repeatedSentenceLabel
             ).joinToString(", ")
 
+            val redundancyFix = if (duplicates.isNotEmpty()) {
+                val topWord = duplicates.first().first
+                "'$topWord' 등 반복 단어를 한 번만 쓰거나 대명사로 대체하세요."
+            } else {
+                "반복되는 문장을 하나로 통합하세요."
+            }
             return AnalysisIssue(
                 type = IssueType.REDUNDANCY,
                 description = "같은 표현이 반복되어 핵심 요청이 흐려집니다: $evidence",
-                suggestedFix = "반복되는 단어를 대명사로 대체하거나 문장을 통합하세요.",
+                suggestedFix = redundancyFix,
                 estimatedSavings = (duplicates.sumOf { it.second - 1 } + repeatedSentences.size * 2).coerceAtLeast(2)
             )
         }
@@ -116,7 +123,19 @@ class PromptAnalyzer(
     }
 
     private fun detectVerbosity(signals: PromptSignals): AnalysisIssue? {
-        val foundFillers = dictionary.fillerPhrases.filter { signals.originalText.contains(it, ignoreCase = true) }
+        val foundFillers = dictionary.fillerPhrases.filter { filler ->
+            if (!signals.originalText.contains(filler, ignoreCase = true)) return@filter false
+            if (filler !in dictionary.conditionalFillerPhrases) return@filter true
+            // 조건부 filler: 뒤에 출력 형식/제약 키워드가 따라오면 조건문으로 판단해 제외
+            val idx = signals.originalText.lowercase().indexOf(filler.lowercase())
+            val window = signals.originalText.substring(idx + filler.length).take(20).lowercase()
+            val isConditional = (dictionary.outputFormatKeywords + dictionary.constraintKeywords)
+                .any { keyword ->
+                    val ki = window.indexOf(keyword)
+                    ki >= 0 && (ki == 0 || window[ki - 1] == ' ')
+                }
+            !isConditional
+        }
         val fillerDensity = if (signals.rawTokens.isNotEmpty()) {
             foundFillers.size.toFloat() / signals.rawTokens.size
         } else {
@@ -141,10 +160,17 @@ class PromptAnalyzer(
                 }
             }.joinToString(", ")
 
+            val verbosityFix = if (foundFillers.isNotEmpty()) {
+                val fillerList = foundFillers.take(2).joinToString(", ") { "'$it'" }
+                if (repeatedConnectors >= 2) "$fillerList 같은 수식어를 제거하고, 요청도 하나로 압축하세요."
+                else "$fillerList 같은 수식어를 제거하고 핵심만 전달하세요."
+            } else {
+                "연결 표현을 줄여 하나의 명확한 요청으로 압축하세요."
+            }
             return AnalysisIssue(
                 type = IssueType.VERBOSITY,
                 description = "핵심 요청보다 설명성 표현이 많습니다: $evidence",
-                suggestedFix = "불필요한 수식어를 제거하여 명확하게 전달하세요.",
+                suggestedFix = verbosityFix,
                 estimatedSavings = (foundFillers.size + repeatedConnectors).coerceAtLeast(2)
             )
         }
@@ -176,10 +202,19 @@ class PromptAnalyzer(
                 "요청에 필요한 정보가 부족합니다: ${missingSignals.joinToString(", ")}"
             }
 
+            val scopeFix = buildString {
+                val hints = buildList {
+                    if (!hasAction) add("무엇을 해달라는지(분석·요약·설명 등)")
+                    if (!hasOutputFormat) add("어떤 형식으로(리스트·표·단계별 등)")
+                    if (!hasContext) add("어떤 상황인지 배경")
+                }
+                if (hints.isNotEmpty()) append(hints.joinToString(", ") + "을 추가하세요.")
+                else append("구체적인 배경 정보나 원하는 답변 형식을 추가하세요.")
+            }
             return AnalysisIssue(
                 type = IssueType.LACK_OF_SCOPE,
                 description = description,
-                suggestedFix = "구체적인 배경 정보나 원하는 답변 형식을 추가하세요.",
+                suggestedFix = scopeFix,
                 estimatedSavings = 0
             )
         }
