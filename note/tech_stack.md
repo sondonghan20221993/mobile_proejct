@@ -1,6 +1,6 @@
 # Prompt Diet — 기술 스택 구현 기록
 
-> 작성일: 2026-06-10  
+> 작성일: 2026-06-11  
 > 구현된 항목만 기록. 추가될 때마다 해당 섹션에 업데이트.
 
 ---
@@ -47,6 +47,10 @@
 - `res/anim/layout_anim_slide_up.xml` — RecyclerView `layoutAnimation` (12% delay)
 - `AnimationUtils.loadAnimation()` — Fragment에서 수동 적용
 
+### 상태 관리
+- XML 기반 앱으로 Compose 상태 API(`remember`, `StateFlow`, `collectAsState`) 미사용
+- UI 상태는 `ViewModel` + `LiveData` → Fragment `observe()`로 처리
+
 ### 색상 리소스
 - `score_good` `#1B7C4A`, `score_medium` `#B45309`, `score_bad` `#B91C1C` — 점수 컬러 스트라이프 및 결과 텍스트
 
@@ -71,7 +75,9 @@
 - `@Database` — `AppDatabase` 싱글턴 (`getInstance(context)`)
 
 ### 네트워크 / 이미지 / 설정
-- 미사용
+- Retrofit / Ktor 미사용 (외부 API 없음)
+- Coil / Glide 미사용 (이미지 로딩 없음)
+- DataStore / SharedPreferences 미사용 (Room으로 전체 데이터 관리)
 
 ---
 
@@ -80,6 +86,7 @@
 - **Coroutines** — `viewModelScope.launch { }` (저장, 삭제)
 - **LiveData** — Room DAO `@Query` 반환 → Repository → ViewModel → Fragment `observe()`
 - **MediatorLiveData** — `statisticsState`: `history` LiveData를 소스로 받아 `StatisticsUiState`로 변환
+- Flow / StateFlow 미사용
 
 ---
 
@@ -87,7 +94,7 @@
 
 - **탭 전환** — `BottomNavigationView.setOnItemSelectedListener` → `FragmentManager.beginTransaction().replace()` 수동 처리
 - **화면 이동** — `Intent(context, DetailStatisticsActivity::class.java)` 명시적 인텐트
-- Navigation Component 미사용
+- Navigation Component / NavController / NavHost 미사용
 
 ---
 
