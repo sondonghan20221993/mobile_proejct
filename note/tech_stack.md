@@ -19,6 +19,7 @@
 - `TextInputLayout` — 프롬프트 입력창
   - `endIconMode="clear_text"` — 입력 초기화 버튼
   - `counterEnabled="true"`, `counterMaxLength="1500"` — 글자 수 카운터
+  - `helperText` — 입력 안내 문구 ("단일 요청문만 입력, 대화 로그·코드 전체 제외")
 - `MaterialButton` — 분석 시작 버튼
 - `BottomNavigationView` — 분석 / 통계 탭 전환
 

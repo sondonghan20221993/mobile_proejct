@@ -20,6 +20,7 @@
         app:hintTextColor="@color/text_muted"
         app:endIconMode="clear_text"
         app:endIconTint="@color/text_muted"
+        app:helperText="@string/input_chat_helper"
         app:counterEnabled="true"
         app:counterMaxLength="1500"
         app:layout_constraintBottom_toTopOf="@id/btn_start_analysis"
