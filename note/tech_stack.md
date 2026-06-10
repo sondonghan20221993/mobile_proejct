@@ -11,6 +11,13 @@
 - **XML + ViewBinding** — `buildFeatures { viewBinding = true }`
 - Jetpack Compose 미사용
 
+### 화면 구성
+- `MainActivity` — 진입점, BottomNavigationView + Fragment 컨테이너
+- `AnalysisFragment` — 프롬프트 입력 및 분석 결과 표시
+- `StatisticsFragment` — 통계 대시보드 (차트, 요약 지표)
+- `DetailStatisticsActivity` — 세부 히스토리 로그 목록
+- `AlertDialog` — 전체 기록 삭제 확인 다이얼로그
+
 ### 레이아웃
 - `ConstraintLayout` — 분석 화면, 통계 화면 메인 구조
 - `LinearLayout` — 히스토리 카드 내부 (좌측 점수 스트라이프 + 콘텐츠 영역)
@@ -139,6 +146,28 @@
 
 ---
 
-## 9. 외부 API
+## 9. 분석 엔진 (로컬 룰 기반)
 
-- 미사용 — 분석 엔진 전부 로컬 룰 기반 (`PromptAnalyzer`, `PromptKeywordDictionary`)
+외부 AI API 미사용. 분석 로직 전부 기기 내 실행.
+
+### `PromptAnalyzer`
+- **탐지 유형 3가지**
+
+| 유형 | 트리거 조건 | 점수 패널티 |
+|------|-------------|-------------|
+| REDUNDANCY | 정규화 토큰 중 동일 어근 3회 이상, 또는 동일 문장 2회 이상 | -12 |
+| VERBOSITY | filler 2개 이상 or density ≥ 15% or connector 2개 이상 | -8 |
+| LACK_OF_SCOPE | 누락 신호 2개 이상 (action·format·constraint·context) | -15 |
+
+- **효율성 점수**: `100 - 패널티 합계`, 0~100 클램프
+- **`isShortButPrecise`**: hasAction && hasOutputFormat && 토큰 수 3~8 → SCOPE 면제
+
+### `PromptKeywordDictionary`
+- **Filler** 18개, **Connector** 8개, **Action** 46개, **OutputFormat** 26개, **Constraint** 18개, **Context** 40개
+- **synonymGroups** 24쌍 — 언어 혼용 중복 탐지 (`python`↔`파이썬`, `js`↔`자바스크립트` 등)
+- **conditionalFillerPhrases** — filler 뒤에 format/constraint 키워드가 오면 조건문으로 판단해 장황 집계 제외
+
+### `simplifyToken()` 처리 순서
+1. suffix 스트리핑 (29개) — 동사 활용형, 격조사, 주격·목적격·보조사
+2. synonymGroups 정규화 — 어근이 동의어 맵에 있으면 대표어로 치환
+3. connector longest-match 중복 제거 — 짧은 phrase가 긴 phrase에 포함되면 집계 제외
