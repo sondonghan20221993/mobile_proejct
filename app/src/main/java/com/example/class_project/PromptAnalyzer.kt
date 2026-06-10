@@ -77,7 +77,15 @@ class PromptAnalyzer(
     }
 
     private fun simplifyToken(token: String): String {
-        val suffixes = listOf("으로", "에서", "에게", "까지", "부터", "보다", "처럼", "하다", "하고", "적인", "적인지", "입니다", "해주세요", "해줘")
+        val suffixes = listOf(
+            "해주세요", "해줘",          // 정중 요청 (긴 것 우선)
+            "했어요", "했어",            // 과거형 (긴 것 우선)
+            "합니다", "한다",            // 공식 현재형
+            "해요", "해서", "하면", "하여", "하는", "하고", "하다",  // 동사 활용형
+            "적인지", "적인",            // 형용사형 (긴 것 우선)
+            "입니다",                    // 공식 계사
+            "으로", "에서", "에게", "까지", "부터", "보다", "처럼"  // 조사
+        )
         val suffixStripped = suffixes.firstOrNull { token.endsWith(it) && token.length > it.length + 1 }
             ?.let { token.removeSuffix(it) }
             ?: token

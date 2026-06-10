@@ -1092,4 +1092,186 @@ class PromptAnalyzerTest {
 
         assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
     }
+
+    // ── 새 suffix 형태 (합니다, 했어, 한다, 하면, 하여, 해서, 하는) ──────────────
+
+    @Test
+    fun `합니다 suffix stripped to same root triggers redundancy`() {
+        // "설명합니다"→"설명", "설명하고"→"설명", "설명합니다"→"설명" → count=3
+        val result = analyzer.analyze("설명합니다 설명하고 설명합니다 구조를 단계로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `했어 suffix stripped to same root triggers redundancy`() {
+        // "분석했어"→"분석", "분석하고"→"분석", "분석했어"→"분석" → count=3
+        val result = analyzer.analyze("분석했어 분석하고 분석했어 결과를 단계로 요약해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `한다 suffix stripped to same root triggers redundancy`() {
+        // "정리한다"→"정리", "정리하고"→"정리", "정리한다"→"정리" → count=3
+        val result = analyzer.analyze("정리한다 정리하고 정리한다 결과를 요약해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `하면 suffix stripped to same root triggers redundancy`() {
+        // "적용하면"→"적용" × 2 + "적용하고"→"적용" → count=3
+        val result = analyzer.analyze("적용하면 적용하고 적용하면 방법을 단계로 설명해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `하여 해서 하는 three forms of same root trigger redundancy`() {
+        // "구현하여"→"구현", "구현해서"→"구현", "구현하는"→"구현" → count=3
+        val result = analyzer.analyze("구현하여 구현해서 구현하는 방법을 단계로 알려줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `same root in only two suffix forms does not trigger redundancy`() {
+        // "분석합니다"→"분석", "분석하고"→"분석" → count=2 < 3 → no REDUNDANCY
+        val result = analyzer.analyze("분석합니다 분석하고 결과를 단계로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    // ── 미커버 action 키워드 ──────────────────────────────────────────────────
+
+    @Test
+    fun `파악 is recognized as action verb`() {
+        // action(파악), format(단계), rawTokens=5 → isShortButPrecise → no SCOPE
+        val result = analyzer.analyze("문제 원인을 파악하고 단계로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 미커버 context 키워드 ────────────────────────────────────────────────
+
+    @Test
+    fun `상황 context keyword satisfies hasContext for short prompt`() {
+        // "상황" in commonContexts → hasContext=true
+        val result = analyzer.analyze("이 상황을 리스트로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `배경 context keyword satisfies hasContext`() {
+        // "배경" in commonContexts → hasContext=true
+        val result = analyzer.analyze("프로젝트 배경을 표로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `운영 context keyword satisfies hasContext`() {
+        // "운영" in businessContexts → hasContext=true
+        val result = analyzer.analyze("서비스 운영 현황을 단계로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `db context keyword satisfies hasContext`() {
+        // "db" in technicalContexts → hasContext=true
+        val result = analyzer.analyze("db 스키마를 코드로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 미커버 connector 케이스 ──────────────────────────────────────────────
+
+    @Test
+    fun `아울러 alone does not trigger verbosity`() {
+        // connector count=1 < 2 → no VERBOSITY
+        val result = analyzer.analyze("이 코드를 설명해줘 아울러 최적화 방법도 리스트로 알려줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `추가로 alone does not trigger verbosity`() {
+        // connector count=1 < 2 → no VERBOSITY
+        val result = analyzer.analyze("이 코드를 최적화하고 추가로 리스트로 알려줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `그리고 and 게다가 together trigger verbosity`() {
+        // 두 connector 각각 포함관계 없음 → count=2 → VERBOSITY
+        val result = analyzer.analyze("설명해줘 그리고 예시도 줘 게다가 번역도 해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    // ── 미커버 filler 케이스 ─────────────────────────────────────────────────
+
+    @Test
+    fun `그냥 and 살짝 together trigger verbosity`() {
+        // informalFiller 2개 → count=2 → VERBOSITY
+        val result = analyzer.analyze("그냥 살짝 수정해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `살짝 in long prompt does not trigger verbosity`() {
+        // density=1/8=0.125 < 0.15, count=1 < 2 → no VERBOSITY
+        val result = analyzer.analyze("살짝 안드로이드 코드 버그 로그인 오류를 단계로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `되도록이면 alone triggers verbosity via density`() {
+        // density=1/2=0.5 ≥ 0.15 → VERBOSITY
+        val result = analyzer.analyze("되도록이면 해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    // ── 미커버 output format ─────────────────────────────────────────────────
+
+    @Test
+    fun `보고서 is recognized as output format`() {
+        // "보고서" in writingOutputFormats → hasOutputFormat=true
+        val result = analyzer.analyze("월별 마케팅 성과를 보고서로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 도메인 실전 프롬프트 (추가) ─────────────────────────────────────────────
+
+    @Test
+    fun `db query optimization prompt is clean`() {
+        // action(최적화), format(단계), context(db) → no issues
+        val result = analyzer.analyze("db 쿼리 성능을 최적화하는 방법을 단계로 알려줘")
+
+        assertTrue(result.issues.isEmpty())
+    }
+
+    @Test
+    fun `education step-by-step prompt is clean`() {
+        // action(설명), format(단계), isShortButPrecise(7토큰) → no issues
+        val result = analyzer.analyze("머신러닝 학습 방법을 초보자 기준으로 단계별로 설명해줘")
+
+        assertTrue(result.issues.isEmpty())
+    }
+
+    @Test
+    fun `api json design prompt avoids scope issue`() {
+        // action(설계), format(json), context(api, 사용자)
+        val result = analyzer.analyze("사용자 인증 api를 json 형식으로 설계해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
 }
