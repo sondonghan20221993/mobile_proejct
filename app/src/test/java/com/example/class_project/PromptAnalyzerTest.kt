@@ -1446,4 +1446,118 @@ class PromptAnalyzerTest {
 
         assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
     }
+
+    // ── suffix + synonym 복합 테스트 ───────────────────────────────────────────
+
+    @Test
+    fun `cross-script suffix stripping and synonym normalization combine to trigger redundancy`() {
+        // "python했어"→strip "했어"→"python"→synonym "파이썬"
+        // "파이썬하고"→strip "하고"→"파이썬"→synonym "파이썬"
+        // "py한다"→strip "한다"→"py"→synonym "파이썬" → count=3 → REDUNDANCY
+        val result = analyzer.analyze("python했어 파이썬하고 py한다 코드를 리스트로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `similar but distinct ml terms do not trigger redundancy`() {
+        // "ml"→"머신러닝" = "머신러닝"×2, "딥러닝"×1, "ai"×1 → max count=2 < 3 → no REDUNDANCY
+        val result = analyzer.analyze("머신러닝 ml 딥러닝 ai 트렌드를 리스트로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    // ── 미커버 action: 분리 ──────────────────────────────────────────────────
+
+    @Test
+    fun `분리 is recognized as action verb`() {
+        // "분리" in planningActions → hasAction=true
+        val result = analyzer.analyze("프론트엔드와 백엔드를 분리해서 코드로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 새 connector 조합 ────────────────────────────────────────────────────
+
+    @Test
+    fun `또한 and 아울러 connectors trigger verbosity`() {
+        // 서로 포함관계 없는 connector 2개 → count=2 → VERBOSITY
+        val result = analyzer.analyze("분석해줘 또한 예시도 줘 아울러 번역도 해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `게다가 and 더불어 connectors trigger verbosity`() {
+        val result = analyzer.analyze("설명해줘 게다가 요약도 줘 더불어 리스트도 만들어줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `three distinct connectors trigger verbosity`() {
+        // 또한(2) + 게다가(3) + 추가로(3) → 서로 포함관계 없음 → count=3 → VERBOSITY
+        val result = analyzer.analyze("또한 게다가 추가로 단계로 설명해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    // ── 새 synonym: css, flutter ─────────────────────────────────────────────
+
+    @Test
+    fun `css repeated three times triggers redundancy`() {
+        // "css"→"css" × 3 → count=3 → REDUNDANCY
+        val result = analyzer.analyze("css css css 스타일을 표로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `flutter repeated three times triggers redundancy`() {
+        // "flutter"→"flutter" × 3 → count=3 → REDUNDANCY
+        val result = analyzer.analyze("flutter flutter flutter 앱 개발 단계를 알려줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    // ── 전문 도메인 복합 프롬프트 ────────────────────────────────────────────
+
+    @Test
+    fun `legal contract summary prompt is fully clean`() {
+        // action(정리), format(리스트), context(법률, 계약) → no issues
+        val result = analyzer.analyze("계약서에서 법률적으로 불리한 조항을 리스트로 정리해줘")
+
+        assertTrue(result.issues.isEmpty())
+    }
+
+    @Test
+    fun `finance portfolio analysis prompt is fully clean`() {
+        // action(분류), format(표), context(투자, 주식)
+        val result = analyzer.analyze("주식 투자 포트폴리오를 리스크 수준별로 표로 분류해줘")
+
+        assertTrue(result.issues.isEmpty())
+    }
+
+    @Test
+    fun `slide format with education context is clean`() {
+        // action(정리), format(슬라이드), context(교육, 학생)
+        val result = analyzer.analyze("학생 교육용 파이썬 입문 자료를 슬라이드로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 점수 검증: 새 connector 조합 ─────────────────────────────────────────
+
+    @Test
+    fun `verbosity from two connectors only gives score 92`() {
+        // "또한"+"아울러" 2 connectors → VERBOSITY only → score = 100-8 = 92
+        val result = analyzer.analyze(
+            "안드로이드 앱 코드 버그를 분석해줘 또한 수정 방법을 리스트로 보여줘 아울러 단계도 정리해줘"
+        )
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+        assertFalse(result.issues.any { it.type == IssueType.REDUNDANCY })
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+        assertEquals(92, result.efficiencyScore)
+    }
 }

@@ -1,6 +1,6 @@
 # Prompt Diet 프로젝트 작업 현황 및 목표
 
-## 📅 최종 업데이트: 2026-06-10 (분석 엔진 5차 개선 + 테스트 167개)
+## 📅 최종 업데이트: 2026-06-10 (분석 엔진 6차 개선 + 테스트 179개)
 
 ## ✅ 완료된 작업
 
@@ -92,6 +92,16 @@
 - **commonConnectors 추가**: `더불어`
 - **synonyms 확장** (18→24쌍): `py`→파이썬, `dl`→딥러닝, `ai`, `css`, `html`, `swift`, `flutter`
 - **테스트 167개** (147→167): professionalContexts(5), 새 action(4), 새 format(3), 더불어 connector(2), 새 synonym(3), 실전(3)
+
+### 13. 테스트 6차 확장 (167→179)
+- **cross-script 복합 테스트**: suffix 스트리핑 + 동의어 정규화 동시 적용 검증
+  - "python했어 파이썬하고 py한다" → 모두 "파이썬"으로 정규화 → REDUNDANCY
+- **유사 ML 용어 구별**: ml→머신러닝(×2) vs 딥러닝(×1) → 별개 개념이므로 no REDUNDANCY
+- **미커버 action**: `분리` 검증
+- **새 connector 조합**: 또한+아울러, 게다가+더불어, 3개 동시 등 7가지 조합
+- **새 synonym 중복**: css×3, flutter×3 → REDUNDANCY
+- **전문 도메인 복합 프롬프트**: 법률 계약, 금융 포트폴리오, 교육 슬라이드 완전 clean
+- **점수 검증**: 새 connector(또한+아울러)로 VERBOSITY만 → score=92
 
 ## 🎯 향후 작업 목표
 - 추가 UI 개선 또는 기능 확장 (필요 시 논의)
