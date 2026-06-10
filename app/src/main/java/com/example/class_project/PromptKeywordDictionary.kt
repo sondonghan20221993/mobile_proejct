@@ -16,7 +16,7 @@ data class PromptKeywordDictionary(
                 fillerPhrases = commonFillers + politeFillers + explanatoryFillers + informalFillers,
                 outputFormatKeywords = commonOutputFormats + technicalOutputFormats + writingOutputFormats,
                 constraintKeywords = commonConstraints + formattingConstraints + qualityConstraints,
-                contextKeywords = commonContexts + technicalContexts + businessContexts,
+                contextKeywords = commonContexts + technicalContexts + businessContexts + professionalContexts,
                 actionKeywords = commonActions + technicalActions + writingActions + planningActions + colloquialActions + analysisActions,
                 connectorKeywords = commonConnectors,
                 synonymGroups = defaultSynonyms,
@@ -79,11 +79,14 @@ data class PromptKeywordDictionary(
         private val writingOutputFormats = listOf(
             "개요",
             "요약문",
+            "요약본",
             "체크리스트",
             "보고서",
             "초안",
             "bullet",
-            "개조식"
+            "개조식",
+            "슬라이드",   // PPT/발표 자료
+            "타임라인"    // 시간 순서 정리
         )
 
         private val commonConstraints = listOf(
@@ -147,6 +150,24 @@ data class PromptKeywordDictionary(
             "팀"
         )
 
+        private val professionalContexts = listOf(
+            "법",      // 법률 관련
+            "법률",
+            "계약",
+            "의료",    // 의료/헬스케어
+            "진료",
+            "환자",
+            "금융",    // 금융/투자
+            "투자",
+            "주식",
+            "보안",    // 사이버보안
+            "취약점",
+            "게임",    // 게임 개발/콘텐츠
+            "교육",    // 교육
+            "학생",
+            "수업"
+        )
+
         private val commonActions = listOf(
             "분석",
             "정리",
@@ -184,7 +205,12 @@ data class PromptKeywordDictionary(
             "분류",
             "계획",
             "도출",
-            "추출"
+            "추출",
+            "구분",    // "항목을 구분해줘"
+            "분리",    // "역할별로 분리해줘"
+            "결합",    // "두 데이터를 결합해줘"
+            "검색",    // "관련 정보를 검색해줘"
+            "학습"     // "모델을 학습시켜줘" / "내용을 학습해줘"
         )
 
         private val analysisActions = listOf(
@@ -207,30 +233,23 @@ data class PromptKeywordDictionary(
         )
 
         private val defaultSynonyms = mapOf(
-            "python" to "파이썬",
-            "파이썬" to "파이썬",
-            "javascript" to "자바스크립트",
-            "js" to "자바스크립트",
-            "자바스크립트" to "자바스크립트",
-            "typescript" to "타입스크립트",
-            "ts" to "타입스크립트",
-            "타입스크립트" to "타입스크립트",
-            "kotlin" to "코틀린",
-            "코틀린" to "코틀린",
-            "java" to "자바",
-            "자바" to "자바",
-            "android" to "안드로이드",
-            "안드로이드" to "안드로이드",
-            "gpt" to "gpt",
-            "chatgpt" to "gpt",
-            "ml" to "머신러닝",
-            "머신러닝" to "머신러닝",
-            "react" to "react",
-            "리액트" to "react",
-            "vue" to "vue",
-            "뷰" to "vue",
-            "database" to "데이터베이스",
-            "데이터베이스" to "데이터베이스"
+            "python" to "파이썬", "py" to "파이썬", "파이썬" to "파이썬",
+            "javascript" to "자바스크립트", "js" to "자바스크립트", "자바스크립트" to "자바스크립트",
+            "typescript" to "타입스크립트", "ts" to "타입스크립트", "타입스크립트" to "타입스크립트",
+            "kotlin" to "코틀린", "코틀린" to "코틀린",
+            "java" to "자바", "자바" to "자바",
+            "android" to "안드로이드", "안드로이드" to "안드로이드",
+            "gpt" to "gpt", "chatgpt" to "gpt",
+            "ml" to "머신러닝", "머신러닝" to "머신러닝",
+            "dl" to "딥러닝", "딥러닝" to "딥러닝",
+            "ai" to "ai",
+            "react" to "react", "리액트" to "react",
+            "vue" to "vue", "뷰" to "vue",
+            "css" to "css",
+            "html" to "html",
+            "swift" to "swift",
+            "flutter" to "flutter",
+            "database" to "데이터베이스", "데이터베이스" to "데이터베이스"
         )
 
         private val commonConnectors = listOf(
@@ -240,7 +259,8 @@ data class PromptKeywordDictionary(
             "그 다음",
             "추가로",
             "게다가",
-            "아울러"
+            "아울러",
+            "더불어"   // "더불어 예시도 들어줘"
         )
     }
 }

@@ -1274,4 +1274,176 @@ class PromptAnalyzerTest {
 
         assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
     }
+
+    // ── professionalContexts (법률, 의료, 금융, 보안, 교육) ─────────────────────
+
+    @Test
+    fun `법률 context keyword satisfies hasContext`() {
+        // "법률" in professionalContexts → hasContext=true
+        val result = analyzer.analyze("계약서의 불리한 조항을 법률 측면에서 리스트로 분석해줘")
+
+        assertTrue(result.issues.isEmpty())
+    }
+
+    @Test
+    fun `의료 context keyword satisfies hasContext`() {
+        // "환자", "진료" in professionalContexts → hasContext=true
+        val result = analyzer.analyze("환자 진료 기록 작성 방법을 단계로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `금융 context keyword satisfies hasContext`() {
+        // "주식" in professionalContexts → hasContext=true
+        val result = analyzer.analyze("주식 포트폴리오 리밸런싱 방법을 단계로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `보안 context keyword satisfies hasContext`() {
+        // "보안", "취약점" in professionalContexts → hasContext=true
+        val result = analyzer.analyze("웹 앱 보안 취약점을 리스트로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `교육 context keyword satisfies hasContext`() {
+        // "학생", "수업" in professionalContexts → hasContext=true
+        val result = analyzer.analyze("학생 수업 자료를 단계로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 새 action 키워드 ─────────────────────────────────────────────────────
+
+    @Test
+    fun `검색 is recognized as action verb`() {
+        // "검색" in planningActions → hasAction=true
+        val result = analyzer.analyze("관련 자료를 리스트로 검색해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `구분 is recognized as action verb`() {
+        // "구분" in planningActions → hasAction=true
+        val result = analyzer.analyze("항목을 유형별로 구분해서 리스트로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `학습 is recognized as action verb`() {
+        // "학습" in planningActions → hasAction=true
+        val result = analyzer.analyze("딥러닝 모델 학습 방법을 단계로 알려줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `결합 is recognized as action verb`() {
+        // "결합" in planningActions → hasAction=true
+        val result = analyzer.analyze("두 데이터를 결합해서 표로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 새 output format ─────────────────────────────────────────────────────
+
+    @Test
+    fun `슬라이드 is recognized as output format`() {
+        // "슬라이드" in writingOutputFormats → hasOutputFormat=true
+        val result = analyzer.analyze("이 내용을 슬라이드로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `타임라인 is recognized as output format`() {
+        // "타임라인" in writingOutputFormats → hasOutputFormat=true
+        val result = analyzer.analyze("프로젝트 일정을 타임라인으로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `요약본 is recognized as output format`() {
+        // "요약본" in writingOutputFormats → hasOutputFormat=true
+        val result = analyzer.analyze("회의 내용을 요약본으로 작성해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 새 connector: 더불어 ────────────────────────────────────────────────
+
+    @Test
+    fun `더불어 and 그리고 together trigger verbosity`() {
+        // 서로 포함관계 없는 connector 2개 → count=2 → VERBOSITY
+        val result = analyzer.analyze("설명해줘 그리고 예시도 줘 더불어 번역도 해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `더불어 alone does not trigger verbosity`() {
+        // connector count=1 < 2 → no VERBOSITY
+        val result = analyzer.analyze("이 코드 설명해줘 더불어 예시도 리스트로 알려줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    // ── 새 synonym (py, dl, swift) ──────────────────────────────────────────
+
+    @Test
+    fun `py and python and 파이썬 normalize to same token and trigger redundancy`() {
+        // "py"→"파이썬", "python"→"파이썬", "파이썬"→"파이썬" → count=3 → REDUNDANCY
+        val result = analyzer.analyze("py python 파이썬 코드를 리스트로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `dl and 딥러닝 normalize to same token and trigger redundancy`() {
+        // "dl"→"딥러닝", "딥러닝"→"딥러닝"×2 → count=3 → REDUNDANCY
+        val result = analyzer.analyze("dl 딥러닝 딥러닝 차이를 표로 알려줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `swift repeated three times triggers redundancy via synonym normalization`() {
+        // "swift"→"swift" × 3 → count=3 → REDUNDANCY
+        val result = analyzer.analyze("swift swift swift 코드를 리스트로 설명해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    // ── 전문 도메인 실전 프롬프트 ────────────────────────────────────────────
+
+    @Test
+    fun `security vulnerability analysis prompt is clean`() {
+        // action(분석), format(리스트), context(보안, 취약점) → no issues
+        val result = analyzer.analyze("웹 앱 보안 취약점을 유형별로 리스트로 분석해줘")
+
+        assertTrue(result.issues.isEmpty())
+    }
+
+    @Test
+    fun `medical record prompt is clean`() {
+        // action(설명), format(단계), context(환자, 진료) → no issues
+        val result = analyzer.analyze("환자 진료 기록 작성 방법을 단계로 설명해줘")
+
+        assertTrue(result.issues.isEmpty())
+    }
+
+    @Test
+    fun `game development design prompt is clean`() {
+        // action(정리), format(단계), context(게임) → no issues
+        val result = analyzer.analyze("게임 캐릭터 설계 원칙을 단계로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
 }

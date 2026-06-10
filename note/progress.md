@@ -1,6 +1,6 @@
 # Prompt Diet 프로젝트 작업 현황 및 목표
 
-## 📅 최종 업데이트: 2026-06-10 (분석 엔진 4차 개선 + 테스트 147개)
+## 📅 최종 업데이트: 2026-06-10 (분석 엔진 5차 개선 + 테스트 167개)
 
 ## ✅ 완료된 작업
 
@@ -81,6 +81,17 @@
   - suffix: `합니다/했어/한다/하면/하여해서하는` 각 형태별 중복 탐지, 2-form만으로는 미트리거
   - 미커버: `파악` action, `상황/배경/운영/db` context, `아울러/추가로` connector 단독, `그냥+살짝` filler pair, `살짝` density 경계, `되도록이면` density, `보고서` format
   - 실전: db 쿼리 최적화, 머신러닝 교육, API JSON 설계 등
+
+### 12. PromptAnalyzer 5차 개선 — 도메인 확장
+- **professionalContexts 추가** (`PromptKeywordDictionary.kt`): 15개 전문 도메인 키워드
+  - 법/법률/계약 (법률), 의료/진료/환자 (의료), 금융/투자/주식 (금융)
+  - 보안/취약점 (사이버보안), 게임, 교육/학생/수업
+  - default()의 contextKeywords에 통합: SCOPE 오탐 감소 효과
+- **planningActions 확장**: `구분`, `분리`, `결합`, `검색`, `학습` 5개 추가
+- **writingOutputFormats 확장**: `요약본`, `슬라이드`, `타임라인` 3개 추가
+- **commonConnectors 추가**: `더불어`
+- **synonyms 확장** (18→24쌍): `py`→파이썬, `dl`→딥러닝, `ai`, `css`, `html`, `swift`, `flutter`
+- **테스트 167개** (147→167): professionalContexts(5), 새 action(4), 새 format(3), 더불어 connector(2), 새 synonym(3), 실전(3)
 
 ## 🎯 향후 작업 목표
 - 추가 UI 개선 또는 기능 확장 (필요 시 논의)
