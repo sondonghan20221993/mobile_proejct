@@ -84,7 +84,8 @@ class PromptAnalyzer(
             "해요", "해서", "하면", "하여", "하는", "하고", "하다",  // 동사 활용형
             "적인지", "적인",            // 형용사형 (긴 것 우선)
             "입니다",                    // 공식 계사
-            "으로", "에서", "에게", "까지", "부터", "보다", "처럼"  // 조사
+            "으로", "에서", "에게", "까지", "부터", "보다", "처럼",  // 격조사
+            "을", "를", "이", "가", "은", "는"                      // 주격·목적격·보조사
         )
         val suffixStripped = suffixes.firstOrNull { token.endsWith(it) && token.length > it.length + 1 }
             ?.let { token.removeSuffix(it) }

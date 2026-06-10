@@ -1275,6 +1275,67 @@ class PromptAnalyzerTest {
         assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
     }
 
+    // ── 조사 suffix (을/를/이/가/은/는) 제거 ──────────────────────────────────
+
+    @Test
+    fun `목적격 조사 을 제거 후 같은 어근 3회 → redundancy`() {
+        // "파이썬을"→"파이썬", "파이썬으로"→"파이썬", "파이썬에서"→"파이썬" → count=3
+        val result = analyzer.analyze("파이썬을 파이썬으로 파이썬에서 리스트로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `목적격 조사 를 제거 후 같은 어근 3회 → redundancy`() {
+        // "코드를"→"코드", "코드로"(으로 없음, 그냥 남음)는 아니고 "코드는"→"코드"
+        // "코드를"→"코드", "코드는"→"코드", "코드가"→"코드" → count=3
+        val result = analyzer.analyze("코드를 코드는 코드가 단계로 설명해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `주격 조사 이 제거 후 같은 어근 3회 → redundancy`() {
+        // "분석이"→"분석", "분석을"→"분석", "분석은"→"분석" → count=3
+        val result = analyzer.analyze("분석이 분석을 분석은 필요한 내용을 표로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `주격 조사 가 제거 후 같은 어근 3회 → redundancy`() {
+        // "설명가"는 비문 → 실용적 케이스로: "코드가"→"코드" 포함
+        val result = analyzer.analyze("코드가 코드를 코드는 왜 이렇게 되는지 설명해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `보조사 은 제거 후 같은 어근 3회 → redundancy`() {
+        // "파이썬은"→"파이썬", "파이썬을"→"파이썬", "파이썬으로"→"파이썬" → count=3
+        val result = analyzer.analyze("파이썬은 파이썬을 파이썬으로 뭘 할 수 있는지 리스트로 알려줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `조사 suffix 제거로 synonym normalization까지 연쇄 적용`() {
+        // "python을"→"을" 제거→"python"→synonym "파이썬"
+        // "파이썬으로"→"으로" 제거→"파이썬"
+        // "py는"→"는" 제거→"py"→synonym "파이썬" → count=3
+        val result = analyzer.analyze("python을 파이썬으로 py는 어떻게 다른지 표로 정리해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `조사만 다른 두 번 등장은 redundancy 미트리거`() {
+        // "코드를"→"코드", "코드는"→"코드" → count=2 < 3 → no REDUNDANCY
+        val result = analyzer.analyze("코드를 코드는 단계로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
     // ── professionalContexts (법률, 의료, 금융, 보안, 교육) ─────────────────────
 
     @Test

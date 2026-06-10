@@ -106,7 +106,7 @@
 ## 7. 테스트
 
 - **JUnit4** 단위 테스트 (`src/test/`) — 기기 없이 로컬 실행
-- `PromptAnalyzerTest` — **179개**, 0.094초
+- `PromptAnalyzerTest` — **186개**, 0.102초
   - REDUNDANCY / VERBOSITY / LACK_OF_SCOPE 경계값, 점수 정밀, 도메인별 좋은 프롬프트, Issue 품질, 속성 불변 검증
   - suffix 스트리핑, 동의어 정규화, 조건부 filler, connector 중복 제거, suggestedFix 구체화 각 검증
 - Espresso instrumented test 미사용
