@@ -846,12 +846,12 @@ class PromptAnalyzerTest {
     // ── 새 실전 데이터셋 ──────────────────────────────────────────────────────
 
     @Test
-    fun `논문 3줄 요약 prompt triggers scope due to missing format`() {
-        // action(요약)=true, constraint(줄)=true, format 없음, context 없음(3토큰<8)
-        // missingSignals: [format, context]=2 → SCOPE
+    fun `논문 context keyword satisfies hasContext`() {
+        // "논문" in businessContexts → hasContext=true
+        // action(요약) + constraint(줄) + context(논문) → missingSignals=[format]=1 < 2 → no SCOPE
         val result = analyzer.analyze("이 논문을 3줄로 요약해줘")
 
-        assertTrue(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
     }
 
     @Test
@@ -939,6 +939,156 @@ class PromptAnalyzerTest {
     @Test
     fun `React and 리액트 normalize to same token and trigger redundancy`() {
         val result = analyzer.analyze("React 리액트 리액트 컴포넌트를 리스트로 만들어줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    // ── 추가 filler (informalFillers) ────────────────────────────────────────
+
+    @Test
+    fun `그냥 alone triggers verbosity via density`() {
+        // density=1/2=0.5 ≥ 0.15 → VERBOSITY
+        val result = analyzer.analyze("그냥 해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `제발 alone triggers verbosity via density`() {
+        val result = analyzer.analyze("제발 도와줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `살짝 alone triggers verbosity via density`() {
+        val result = analyzer.analyze("살짝 수정해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `정말 and 그냥 together trigger verbosity via count`() {
+        // commonFiller(정말) + informalFiller(그냥) → count=2 → VERBOSITY
+        val result = analyzer.analyze("정말 그냥 편하게 설명해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `그냥 in long prompt does not trigger verbosity`() {
+        // density=1/8=0.125 < 0.15, count=1 < 2, connectors=0 → no VERBOSITY
+        val result = analyzer.analyze("그냥 안드로이드 코드 버그 로그인 오류를 단계로 설명해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    // ── 추가 connector (게다가, 아울러) ──────────────────────────────────────
+
+    @Test
+    fun `게다가 and 아울러 connectors trigger verbosity`() {
+        val result = analyzer.analyze("설명해줘 게다가 예시도 보여줘 아울러 번역도 해줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    @Test
+    fun `게다가 alone does not trigger verbosity`() {
+        // connector 1개 < 2 → no VERBOSITY
+        val result = analyzer.analyze("이 코드를 설명해줘 게다가 최적화 방법도 리스트로 알려줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.VERBOSITY })
+    }
+
+    // ── 추가 action 키워드 (analysisActions) ─────────────────────────────────
+
+    @Test
+    fun `시각화 is recognized as action verb`() {
+        val result = analyzer.analyze("월별 매출 데이터를 그래프로 시각화해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `계산 is recognized as action verb`() {
+        val result = analyzer.analyze("프로젝트 예산을 단계로 계산해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `예측 is recognized as action verb`() {
+        val result = analyzer.analyze("내년 매출을 데이터 기반으로 표로 예측해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `그려 is recognized as action verb for diagram prompts`() {
+        val result = analyzer.analyze("시스템 구조를 다이어그램으로 그려줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `평가 is recognized as action verb`() {
+        val result = analyzer.analyze("이 코드의 성능을 단계로 평가해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 추가 output format (다이어그램, 그래프, 순서도) ────────────────────
+
+    @Test
+    fun `다이어그램 is recognized as output format`() {
+        // action(그려) + format(다이어그램) → no SCOPE
+        val result = analyzer.analyze("배포 프로세스를 다이어그램으로 그려줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `그래프 is recognized as output format`() {
+        val result = analyzer.analyze("매출 추이를 그래프로 보여줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `순서도 is recognized as output format`() {
+        val result = analyzer.analyze("업무 흐름을 순서도로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 추가 context 키워드 (논문, 회사, 팀) ─────────────────────────────────
+
+    @Test
+    fun `회사 context keyword satisfies hasContext`() {
+        val result = analyzer.analyze("회사 보고서를 단계로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    @Test
+    fun `팀 context keyword satisfies hasContext`() {
+        val result = analyzer.analyze("팀 업무 현황을 표로 정리해줘")
+
+        assertFalse(result.issues.any { it.type == IssueType.LACK_OF_SCOPE })
+    }
+
+    // ── 추가 synonym 테스트 ────────────────────────────────────────────────────
+
+    @Test
+    fun `TypeScript and TS normalize to same token and trigger redundancy`() {
+        val result = analyzer.analyze("TypeScript TS ts 문법을 리스트로 알려줘")
+
+        assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
+    }
+
+    @Test
+    fun `database and 데이터베이스 normalize to same token and trigger redundancy`() {
+        val result = analyzer.analyze("database 데이터베이스 데이터베이스 설계를 표로 알려줘")
 
         assertTrue(result.issues.any { it.type == IssueType.REDUNDANCY })
     }

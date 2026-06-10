@@ -13,11 +13,11 @@ data class PromptKeywordDictionary(
     companion object {
         fun default(): PromptKeywordDictionary {
             return PromptKeywordDictionary(
-                fillerPhrases = commonFillers + politeFillers + explanatoryFillers,
+                fillerPhrases = commonFillers + politeFillers + explanatoryFillers + informalFillers,
                 outputFormatKeywords = commonOutputFormats + technicalOutputFormats + writingOutputFormats,
                 constraintKeywords = commonConstraints + formattingConstraints + qualityConstraints,
                 contextKeywords = commonContexts + technicalContexts + businessContexts,
-                actionKeywords = commonActions + technicalActions + writingActions + planningActions + colloquialActions,
+                actionKeywords = commonActions + technicalActions + writingActions + planningActions + colloquialActions + analysisActions,
                 connectorKeywords = commonConnectors,
                 synonymGroups = defaultSynonyms,
                 conditionalFillerPhrases = politeFillers.toSet()
@@ -48,6 +48,12 @@ data class PromptKeywordDictionary(
             "조금은"
         )
 
+        private val informalFillers = listOf(
+            "그냥",  // 그냥 해줘
+            "제발",  // 제발 도와줘
+            "살짝"   // 살짝 수정해줘
+        )
+
         private val commonOutputFormats = listOf(
             "표",
             "리스트",
@@ -64,7 +70,10 @@ data class PromptKeywordDictionary(
             "xml",
             "api",
             "함수",
-            "클래스"
+            "클래스",
+            "다이어그램",
+            "그래프",
+            "순서도"
         )
 
         private val writingOutputFormats = listOf(
@@ -132,7 +141,10 @@ data class PromptKeywordDictionary(
             "기획",
             "운영",
             "마케팅",
-            "문서"
+            "문서",
+            "논문",
+            "회사",
+            "팀"
         )
 
         private val commonActions = listOf(
@@ -175,6 +187,15 @@ data class PromptKeywordDictionary(
             "추출"
         )
 
+        private val analysisActions = listOf(
+            "시각화",  // 데이터를 시각화해줘
+            "계산",    // 비용을 계산해줘
+            "예측",    // 매출을 예측해줘
+            "평가",    // 성능을 평가해줘
+            "파악",    // 원인을 파악해줘
+            "그려"     // 다이어그램을 그려줘
+        )
+
         private val colloquialActions = listOf(
             "알려",   // 알려줘, 알려주세요
             "보여",   // 보여줘, 보여주세요
@@ -191,6 +212,9 @@ data class PromptKeywordDictionary(
             "javascript" to "자바스크립트",
             "js" to "자바스크립트",
             "자바스크립트" to "자바스크립트",
+            "typescript" to "타입스크립트",
+            "ts" to "타입스크립트",
+            "타입스크립트" to "타입스크립트",
             "kotlin" to "코틀린",
             "코틀린" to "코틀린",
             "java" to "자바",
@@ -204,7 +228,9 @@ data class PromptKeywordDictionary(
             "react" to "react",
             "리액트" to "react",
             "vue" to "vue",
-            "뷰" to "vue"
+            "뷰" to "vue",
+            "database" to "데이터베이스",
+            "데이터베이스" to "데이터베이스"
         )
 
         private val commonConnectors = listOf(
@@ -212,7 +238,9 @@ data class PromptKeywordDictionary(
             "또한",
             "그리고 또",
             "그 다음",
-            "추가로"
+            "추가로",
+            "게다가",
+            "아울러"
         )
     }
 }
