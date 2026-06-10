@@ -70,7 +70,18 @@
 - **`개조식` 출력 형식 추가**: writingOutputFormats에 등재
 - **테스트 107개** (79 → 107): 조건부 filler(7), 동의어(5), suggestedFix(5), 실전 프롬프트(11)
 
-### 11. PromptAnalyzer 4차 개선
+### 11. PromptAnalyzer 키워드 사전 2차 확장 (107→126)
+- **informalFillers 추가** (`PromptKeywordDictionary.kt`): `그냥`, `제발`, `살짝`
+- **analysisActions 추가**: `시각화`, `계산`, `예측`, `평가`, `파악`, `그려`
+- **commonConnectors 추가**: `게다가`, `아울러` (총 7개)
+- **technicalOutputFormats 추가**: `다이어그램`, `그래프`, `순서도`
+- **writingOutputFormats 추가**: `개조식`
+- **businessContexts 추가**: `논문`, `회사`, `팀`
+- **synonymGroups 초기 구성** (24쌍): python/파이썬, js/자바스크립트, ts/타입스크립트, kotlin/코틀린, java/자바, android/안드로이드, chatgpt→gpt, ml→머신러닝, react/리액트, vue/뷰, database/데이터베이스
+- **conditionalFillerPhrases 도입**: politeFillers를 Set으로 관리, 조건부 판단 로직 연동
+- **테스트 126개** (107→126): informalFiller(5), analysisActions(5), 새 connector(2), 새 format(3), 새 context(2), 새 synonym(2)
+
+### 12. PromptAnalyzer 4차 개선
 - **동사 suffix 스트리핑 확장** (`PromptAnalyzer.kt`): `simplifyToken()`에 9개 동사 활용형 추가
   - `합니다`, `한다` (공식 현재형)
   - `했어요`, `했어` (과거형, 긴 것 우선)
@@ -82,7 +93,7 @@
   - 미커버: `파악` action, `상황/배경/운영/db` context, `아울러/추가로` connector 단독, `그냥+살짝` filler pair, `살짝` density 경계, `되도록이면` density, `보고서` format
   - 실전: db 쿼리 최적화, 머신러닝 교육, API JSON 설계 등
 
-### 12. PromptAnalyzer 5차 개선 — 도메인 확장
+### 13. PromptAnalyzer 5차 개선 — 도메인 확장
 - **professionalContexts 추가** (`PromptKeywordDictionary.kt`): 15개 전문 도메인 키워드
   - 법/법률/계약 (법률), 의료/진료/환자 (의료), 금융/투자/주식 (금융)
   - 보안/취약점 (사이버보안), 게임, 교육/학생/수업
@@ -93,7 +104,7 @@
 - **synonyms 확장** (18→24쌍): `py`→파이썬, `dl`→딥러닝, `ai`, `css`, `html`, `swift`, `flutter`
 - **테스트 167개** (147→167): professionalContexts(5), 새 action(4), 새 format(3), 더불어 connector(2), 새 synonym(3), 실전(3)
 
-### 13. 테스트 6차 확장 (167→179)
+### 14. 테스트 6차 확장 (167→179)
 - **cross-script 복합 테스트**: suffix 스트리핑 + 동의어 정규화 동시 적용 검증
   - "python했어 파이썬하고 py한다" → 모두 "파이썬"으로 정규화 → REDUNDANCY
 - **유사 ML 용어 구별**: ml→머신러닝(×2) vs 딥러닝(×1) → 별개 개념이므로 no REDUNDANCY
