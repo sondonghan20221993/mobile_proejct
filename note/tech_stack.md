@@ -99,9 +99,15 @@
 
 ## 5. 내비게이션
 
-- **탭 전환** — `BottomNavigationView.setOnItemSelectedListener` → `FragmentManager.beginTransaction().replace()` 수동 처리
-- **화면 이동** — `Intent(context, DetailStatisticsActivity::class.java)` 명시적 인텐트
-- Navigation Component / NavController / NavHost 미사용
+### Navigation Component 2.7.7
+- `res/navigation/nav_graph.xml` — 목적지 3개 등록
+  - `nav_analysis` (startDestination) → `AnalysisFragment`
+  - `nav_statistics` → `StatisticsFragment`
+  - `detailStatisticsActivity` → `DetailStatisticsActivity` (activity 목적지)
+  - action `action_to_detail_statistics`: StatisticsFragment → DetailStatisticsActivity
+- `activity_main.xml` — `FragmentContainerView` + `app:navGraph="@navigation/nav_graph"` + `app:defaultNavHost="true"`
+- `MainActivity` — `NavHostFragment.navController` + `BottomNavigationView.setupWithNavController()`
+- `StatisticsFragment` — `findNavController().navigate(R.id.action_to_detail_statistics)`
 
 ---
 
@@ -139,6 +145,7 @@
 | minSdk | 24 |
 | targetSdk | 36 |
 | Room | 2.7.2 |
+| Navigation | 2.7.7 |
 | Lifecycle (ViewModel·LiveData) | 2.8.7 |
 | Material | 1.10.0 |
 
